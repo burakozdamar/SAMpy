@@ -15,18 +15,15 @@ def memoize_mass():
   print("memo")
   with open(ff) as f:
     xyz = read_xyz(f)
-    coords = xyz.coords
     atomtypes = xyz.atomtypes
-    mass_arr = np.zeros((len(coords),))
-    for idx, atom in enumerate(atomtypes):
-      mass_arr[idx] = mass[atom]
+    mass_arr = [mass[atom] for atom in atomtypes]
+    mass_arr = np.array(mass_arr)
   return mass_arr
 
 mass_arr = memoize_mass() 
 
 def calcul_CM(xyz):
   coords = xyz.coords
-  atomtypes = xyz.atomtypes
   
   x_sum = np.sum(coords[:,0] * mass_arr)
   y_sum = np.sum(coords[:,1] * mass_arr)
@@ -34,10 +31,13 @@ def calcul_CM(xyz):
 
   print(x_sum,y_sum,z_sum) 
   if x_sum/np.sum(mass_arr) > 13.386/2:
-      print( x_sum/np.sum(mass_arr) -  13.386/2)
+      print("here", x_sum/np.sum(mass_arr) -  13.386/2)
   print(x_sum/np.sum(mass_arr))
   print(y_sum/np.sum(mass_arr))
   print(z_sum/np.sum(mass_arr))
+
+def pbc(arr):
+  pass
 
 def open_file(ff):
 

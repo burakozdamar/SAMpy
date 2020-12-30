@@ -3,12 +3,11 @@
 import sys
 import numpy as np
 
-sys.path.append('/Users/burakozdamar/myGitRep/SFGpy')
+sys.path.append('..')
 
 from utils.xyz_utils import read_xyz
-#import utils.xyz_utils
 
-ff = "/Users/burakozdamar/brites-tmp/PEG8_traj2_pos70to130ps-10steps.xyz"
+ff = "PEG8_traj2_pos70to130ps-10steps.xyz"
 mass = {'H': 1.00794,'C':12.0107,'O':15.9994,'Si':28.0855,'Cl':35.4527,'K':39.0983,'Al':26.981539}
 
 def memoize_mass():

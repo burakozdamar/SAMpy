@@ -1,4 +1,4 @@
 *.swp
+*.swo
 __pycache__/
 warehouse/
-PEG8_traj2_pos70to130ps-10steps.xyz

@@ -5,25 +5,27 @@ import numpy as np
 
 sys.path.append('..')
 
+ff = sys.argv[1]
+
 from utils.xyz_utils import read_xyz
 from collections import Counter 
 
-ff = "../warehouse/PEG.xyz"
+#ff = "../warehouse/mini.xyz"
+#ff = "../warehouse/PEG.xyz"
 #ff = "../warehouse/test.xyz"
 
 mass = {'H': 1.00794,'C':0,'x':12.0107,'O':15.9994,'Si':28.0855,'Cl':35.4527,'K':39.0983,'Al':26.981539}
 pbc_ = np.array([13.386,13.286,85])
 
 def memoize_mass(ff):
+  mass_arr = []
   print("memo")
   with open(ff) as f:
     xyz = read_xyz(f)
     atomtypes = xyz.atomtypes
-    #for a in atomtypes:
-    #  if a == "C":
-        
-    mass_arr = [mass[atom] for atom in atomtypes]
-    mass_arr = np.array(mass_arr)
+
+  mass_arr = np.array([mass[atom] for atom in atomtypes])
+  #mass_arr = np.array(mass_arr)
   return mass_arr
 
 mass_arr = memoize_mass(ff) 
@@ -34,20 +36,20 @@ def translate(arr1,arr2):
 def calcul_CM(xyz):
   coords = xyz.coords
   atomtypes = xyz.atomtypes
+  print("orig", mass_arr)
   print(Counter(atomtypes))
-  print(atomtypes)
-  print(mass_arr, sum(mass_arr))
-  com = np.true_divide(mass_arr.sum(0),(mass_arr!=0).sum(0))
-  #com = np.average(coords, axis=0, weights=mass_arr)
+  mass_arr1 = mass_arr[np.nonzero(mass_arr)]
+  com = np.average(coords[np.nonzero(mass_arr)], axis=0, weights=mass_arr1)#[np.nonzero(mass_arr)])
+  print("modif", mass_arr1)
   t = translate(coords, com)
-  #print("coords", coords)
   print("com", com)
-  #print("t",t)
   pbc(t)
-  #print(com)
-  #print(coords - com)
+  print(t)
+  return t
+
 
 def pbc(arr):
+
   print("before:", arr[0])
   if arr[0,0] < -pbc_[0]/2:
       arr[0,0] += pbc_[0]
@@ -65,9 +67,11 @@ def pbc(arr):
       arr[0,2] -= pbc_[2]
 
   print("after",arr[0])
-
   #print(arr[arr < -pbc_/2][:5])
   #print(pbc_/2)
+
+def write_to_file():
+  pass
 
 def open_file(ff):
 

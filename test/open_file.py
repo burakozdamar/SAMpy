@@ -19,15 +19,16 @@ pbc_ = np.array([13.386,13.286,85])
 
 def memoize_mass(ff):
   mass_arr = []
-  print("memo")
   with open(ff) as f:
     xyz = read_xyz(f)
     atomtypes = xyz.atomtypes
 
+  print(Counter(atomtypes))
   mass_arr = np.array([mass[atom] for atom in atomtypes])
   print("orig", mass_arr)
   mass_arr = mass_arr[np.nonzero(mass_arr)]
   #mass_arr = np.array(mass_arr)
+  print("modif", mass_arr)
   return mass_arr
 
 mass_arr = memoize_mass(ff) 
@@ -38,17 +39,22 @@ def translate(arr1,arr2):
 def calcul_CM(xyz):
   coords = xyz.coords
   atomtypes = xyz.atomtypes
-  print(Counter(atomtypes))
   com = np.average(coords[np.nonzero(mass_arr)], axis=0, weights=mass_arr)#[np.nonzero(mass_arr)])
-  print("modif", mass_arr)
   t = translate(coords, com)
-  print("com", com)
-  pbc(t)
-  print(t)
-  return t
-
+ # print("com", com)
+  #print('t',t)
+  t_prime = pbc(t)
+  print("t'",t_prime)
+  #return t
 
 def pbc(arr):
+  arr = np.where(arr < (-pbc_/2), arr+(pbc_/2), arr)
+  arr = np.where(arr > (+pbc_/2), arr-(pbc_/2), arr)
+  return arr 
+
+
+
+def pbc1(arr):
 
   print("before:", arr[0])
   if arr[0,0] < -pbc_[0]/2:
@@ -79,12 +85,11 @@ def open_file(ff):
     for i in range(2):
       try:
         xyz = read_xyz(f)
-        print(f"Finished reading {i}")
+        print(f"{i}")
       except:
         print("DONE")
         break
   
-      print("calc")
       calcul_CM(xyz)
 
 open_file(ff)

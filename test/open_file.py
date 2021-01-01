@@ -14,7 +14,7 @@ from collections import Counter
 #ff = "../warehouse/PEG.xyz"
 #ff = "../warehouse/test.xyz"
 
-mass = {'H': 1.00794,'C':0,'x':12.0107,'O':15.9994,'Si':28.0855,'Cl':35.4527,'K':39.0983,'Al':26.981539}
+mass = {'H': 1.00794,'x':0,'C':12.0107,'O':15.9994,'Si':28.0855,'Cl':35.4527,'K':39.0983,'Al':26.981539}
 pbc_ = np.array([13.386,13.286,85])
 
 def memoize_mass(ff):
@@ -22,12 +22,16 @@ def memoize_mass(ff):
   with open(ff) as f:
     xyz = read_xyz(f)
     atomtypes = xyz.atomtypes
-
+  # silicons or alums coming later from C
+  if 'C' in atomtypes:
+    mass_arr = np.array([mass[atom] if atom == 'Si' else 0 for atom in atomtypes])
+    
   print(Counter(atomtypes))
-  mass_arr = np.array([mass[atom] for atom in atomtypes])
+
+  #mass_arr = np.array([mass[atom] for atom in atomtypes if atom!="C" else 0])
+  #mass_arr = np.array([mass[atom] for atom in atomtypes])
   print("orig", mass_arr)
-  mass_arr = mass_arr[np.nonzero(mass_arr)]
-  #mass_arr = np.array(mass_arr)
+  #mass_arr = mass_arr[np.nonzero(mass_arr)]
   print("modif", mass_arr)
   return mass_arr
 
@@ -39,12 +43,12 @@ def translate(arr1,arr2):
 def calcul_CM(xyz):
   coords = xyz.coords
   atomtypes = xyz.atomtypes
-  com = np.average(coords[np.nonzero(mass_arr)], axis=0, weights=mass_arr)#[np.nonzero(mass_arr)])
+  com = np.average(coords, axis=0, weights=mass_arr)
   t = translate(coords, com)
- # print("com", com)
-  #print('t',t)
-  t_prime = pbc(t)
-  print("t'",t_prime)
+  print("com", com)
+  print('t',t)
+  #t_prime = pbc(t)
+  #print("t'",t_prime)
   #return t
 
 def pbc(arr):

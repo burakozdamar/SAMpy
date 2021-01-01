@@ -25,6 +25,8 @@ def memoize_mass(ff):
     atomtypes = xyz.atomtypes
 
   mass_arr = np.array([mass[atom] for atom in atomtypes])
+  print("orig", mass_arr)
+  mass_arr = mass_arr[np.nonzero(mass_arr)]
   #mass_arr = np.array(mass_arr)
   return mass_arr
 
@@ -36,11 +38,9 @@ def translate(arr1,arr2):
 def calcul_CM(xyz):
   coords = xyz.coords
   atomtypes = xyz.atomtypes
-  print("orig", mass_arr)
   print(Counter(atomtypes))
-  mass_arr1 = mass_arr[np.nonzero(mass_arr)]
-  com = np.average(coords[np.nonzero(mass_arr)], axis=0, weights=mass_arr1)#[np.nonzero(mass_arr)])
-  print("modif", mass_arr1)
+  com = np.average(coords[np.nonzero(mass_arr)], axis=0, weights=mass_arr)#[np.nonzero(mass_arr)])
+  print("modif", mass_arr)
   t = translate(coords, com)
   print("com", com)
   pbc(t)

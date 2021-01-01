@@ -45,17 +45,17 @@ def calcul_CM(xyz):
   atomtypes = xyz.atomtypes
   com = np.average(coords, axis=0, weights=mass_arr)
   t = translate(coords, com)
-  print("com", com)
-  print('t',t)
-  #t_prime = pbc(t)
-  #print("t'",t_prime)
+  #print("com", com)
+  #print('t',t)
+  t_prime = pbc(t)
+  #pbc1(t)
+  print("t'",t_prime)
   #return t
 
 def pbc(arr):
-  arr = np.where(arr < (-pbc_/2), arr+(pbc_/2), arr)
-  arr = np.where(arr > (+pbc_/2), arr-(pbc_/2), arr)
+  arr = np.where(arr < (-pbc_/2), arr+(pbc_), arr)
+  arr = np.where(arr > (pbc_/2), arr-(pbc_), arr)
   return arr 
-
 
 
 def pbc1(arr):

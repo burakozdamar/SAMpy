@@ -16,12 +16,6 @@ mass = {'H': 1.00794,'x':0,'C':12.0107,'O':15.9994,'Si':28.0855,'Cl':35.4527,'K'
 pbc_ = np.array([13.386,13.286,85])
 
 
-def write_xyz(fout, coords, title="", atomtypes=("A",)):
-    with open(gg,'a') as fout:
-      fout.write("%d\n%s\n" % (coords.size / 3, title))
-      for x, atomtype in zip(coords.reshape(-1, 3), cycle(atomtypes)):
-          fout.write("%s %.8g %.8g %.8g\n" % (atomtype, x[0], x[1], x[2]))
-
 def memoize_mass(ff):
   mass_arr = []
   with open(ff) as f:
@@ -49,14 +43,11 @@ def pbc(arr):
   arr = np.where(arr >  pbc_/2, arr-pbc_, arr)
   return arr 
 
-def write_header(g):
-  ret = len(mass_arr)
-  #print(ret)
-  g.write(str.encode(str(ret)+'\n\n'))
-
-def write_to_file(g,arr):
-  write_header(g)
-  np.savetxt(g, arr, fmt='%.6f')
+def write_xyz(fout, coords, title="", atomtypes=("A",)):
+    with open(gg,'a') as fout:
+      fout.write("%d\n%s\n" % (coords.size / 3, title))
+      for x, atomtype in zip(coords.reshape(-1, 3), cycle(atomtypes)):
+          fout.write("%s %.8g %.8g %.8g\n" % (atomtype, x[0], x[1], x[2]))
 
 def open_file(ff):
 

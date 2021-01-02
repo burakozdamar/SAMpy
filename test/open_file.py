@@ -6,11 +6,11 @@ import numpy as np
 sys.path.append('..')
 
 ff = sys.argv[1]
-gg = "pos_recentered_py.xyz"
+gg = "py_pos_recentered.xyz"
 
 from utils.xyz_utils import read_xyz
-from collections import Counter
-from itertools import cycle 
+from collections import Counter,namedtuple
+from itertools import cycle ,count
 
 mass = {'H': 1.00794,'x':0,'C':12.0107,'O':15.9994,'Si':28.0855,'Cl':35.4527,'K':39.0983,'Al':26.981539}
 pbc_ = np.array([13.386,13.286,85])
@@ -33,7 +33,6 @@ def translate(arr1,arr2):
 
 def calcul_CM(xyz):
   coords = xyz.coords
-  atomtypes = xyz.atomtypes
   com = np.average(coords, axis=0, weights=mass_arr)
   t = pbc(translate(coords, com))
   return t
@@ -44,26 +43,24 @@ def pbc(arr):
   return arr 
 
 def write_xyz(fout, coords, title="", atomtypes=("A",)):
-    with open(gg,'a') as fout:
-      fout.write("%d\n%s\n" % (coords.size / 3, title))
-      for x, atomtype in zip(coords.reshape(-1, 3), cycle(atomtypes)):
-          fout.write("%s %.8g %.8g %.8g\n" % (atomtype, x[0], x[1], x[2]))
+  fout.write("%d\n%s\n" % (coords.size / 3, title))
+  for x, atomtype in zip(coords.reshape(-1, 3), cycle(atomtypes)):
+    #fout.write("%s %.8g %.8g %.8g\n" % (atomtype, x[0], x[1], x[2]))
+    fout.write('{:2s} {:>12.6f} {:>12.6f} {:>12.6f}\n'.format(atomtype, x[0], x[1], x[2]))
 
 def open_file(ff):
 
   with open(ff) as f:
     with open(gg,'w') as g:
-      for i in range(20):
+      for i in count(1):
         try:
           xyz = read_xyz(f)
-          print(f"{i}")
+          if i%1000==0: print(f"{i}")
           t = calcul_CM(xyz)
           write_xyz(g, t, title="", atomtypes=atomtypes) 
           #write_to_file(g,t)
-        except Exception as e:
-          print("DONE",e)
+        except ValueError as e:
+          print("DONE")
           break
   
 open_file(ff)
-
- 

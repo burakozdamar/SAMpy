@@ -1,6 +1,6 @@
 # SFGpy
 -----
-
+-----
 Usage
 -----
 python open_file.py file.xyz

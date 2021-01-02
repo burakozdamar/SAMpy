@@ -2,7 +2,7 @@
 
 Usage
 -----
-python open_file.py <xyz>
+python open_file.py file.xyz
 
 TODO
 -----

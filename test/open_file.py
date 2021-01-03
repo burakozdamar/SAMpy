@@ -17,9 +17,8 @@ from itertools import cycle, count, groupby
 mass = {'H': 1.00794,'x':0,'C':12.0107,'O':15.9994,'Si':28.0855,'Cl':35.4527,'K':39.0983,'Al':26.981539}
 pbc_ = np.array([13.386,13.286,85])
 
+
 def memoize_mass(xyz):
-  print('here')
-  print(xyz.atomtypes)
   mass_arr = np.array([mass[atom] for atom in xyz.atomtypes])  
   return mass_arr 
  # if kind=='water':
@@ -36,31 +35,43 @@ def memoize_mass(xyz):
 def translate(arr1,arr2):
   return arr1-arr2
 
-def calcul_CM(xyz, kind='Si'):
+def translate_to_CM(xyz, kind='Si'):
+  data= xyz.data
   coords = xyz.coords
-  
-  if kind=='water':
-    mass_arr = np.array([mass[atom] for atom in xyz.atomtypes])
-    print(mass_arr)
+  atomtypes = xyz.atomtypes
+
+  if 'C' in xyz.atomtypes:
+    mass_arr = np.array([mass[atom] if atom == kind else 0 for atom in xyz.atomtypes])  
   else:
-    mass_arr = np.array([mass[atom] if atom == 'Si' else 0 for atom in xyz.atomtypes])  
+    mass_arr = np.array([mass[atom] for atom in xyz.atomtypes])
 
   com = np.average(coords, axis=0, weights=mass_arr[:coords.shape[0]])
+  translated = pbc(translate(coords, com))
+  
+  return namedtuple("trans_to_CM", ["coords", "data", "atomtypes"])(
+        translated, data, atomtypes 
+    )
+  #return translated
 
-  t = pbc(translate(coords, com))
-  return t
-
-def water_molecules(xyz):
+def water_molecules(xyz, translate=0, rebuilt=False):
   data = xyz.data
-  step = data[0]
   atomtypes = xyz.atomtypes
   coords = xyz.coords
   data_dct = read_boxdata()
-  val = data_dct['$NO']
-  coords = coords[:int(val[0])*3]  
-  atomtypes = atomtypes[:int(val[0])*3]  
-  return namedtuple("waters", ["coords", "step", "atomtypes"])(
-        coords, step, atomtypes 
+  n_oxygens = data_dct['$NO']
+  coords = coords[:int(n_oxygens[0])*3]  
+  atomtypes = atomtypes[:int(n_oxygens[0])*3]  
+  coords[:,2] -= translate
+
+  if rebuilt:
+    print("rebuilt", coords[0])
+    coords = pbc(coords)
+    print(coords[0])
+    coords = water_pbc(coords)
+    print(coords[0])
+
+  return namedtuple("waters", ["coords", "data", "atomtypes"])(
+        coords, data, atomtypes 
     )
 
 #def read_xyz(fin):
@@ -83,6 +94,14 @@ def pbc(arr):
   arr = np.where(arr >  pbc_/2, arr-pbc_, arr)
   return arr 
 
+def water_pbc(t):
+  O = t[::3]
+  H1 = t[1::3]
+  H2 = t[2::3]
+  a = pbc(O-H1)  
+  a = pbc(O-H2)  
+  return a 
+
 def write_xyz(fout, coords, title="", atomtypes=("A",)):
   fout.write("%d\n%s\n" % (coords.size / 3, title))
   for x, atomtype in zip(coords.reshape(-1, 3), cycle(atomtypes)):
@@ -99,7 +118,7 @@ def read_boxdata():
     return dict(zip(k,v))
 
 BOXDATA = read_boxdata()
-trans_val = float(BOXDATA['$ZTRASL'][0].replace('d','.'))
+trans_val =0# float(BOXDATA['$ZTRASL'][0].replace('d','.'))
 
 
 def open_file(ff):
@@ -118,13 +137,11 @@ def open_file(ff):
       break
 
     if i%1==0: print(f"x{i}")
-    t = calcul_CM(xyz, kind='Si')
-    water_mols = water_molecules(xyz)
-    water_com = calcul_CM(water_mols, kind='water')
-    #print(water_mols)
-    #t_trans = translate(water_molecules(xyz),-trans_val)
-    write_xyz(g, t, title="", atomtypes=xyz.atomtypes) 
-    write_xyz(h, water_com, atomtypes=xyz.atomtypes) 
+    t = translate_to_CM(xyz, kind='Si')
+    water_mols = water_molecules(t, translate=trans_val, rebuilt=True)
+      
+    write_xyz(g, t.coords, title="", atomtypes=xyz.atomtypes) 
+    write_xyz(h, water_mols.coords, atomtypes=xyz.atomtypes) 
      
   f.close()
   g.close()

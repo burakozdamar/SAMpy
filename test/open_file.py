@@ -67,8 +67,9 @@ def water_molecules(xyz, translate=0, rebuilt=False):
     print("rebuilt", coords[0])
     coords = pbc(coords)
     print(coords[0])
-    coords = water_pbc(coords)
-    print(coords[0])
+    #coords = water_pbc(coords)
+    #print(coords[0])
+  print(coords.shape)
 
   return namedtuple("waters", ["coords", "data", "atomtypes"])(
         coords, data, atomtypes 
@@ -99,7 +100,9 @@ def water_pbc(t):
   H1 = t[1::3]
   H2 = t[2::3]
   a = pbc(O-H1)  
+  print(np.max(a))
   a = pbc(O-H2)  
+  print(np.max(a))
   return a 
 
 def write_xyz(fout, coords, title="", atomtypes=("A",)):
@@ -118,14 +121,13 @@ def read_boxdata():
     return dict(zip(k,v))
 
 BOXDATA = read_boxdata()
-trans_val =0# float(BOXDATA['$ZTRASL'][0].replace('d','.'))
-
+trans_val = abs(float(BOXDATA['$ZTRASL'][0].replace('d','.')))
 
 def open_file(ff):
 
-  f= open(ff)
-  g= open(gg,'w')
-  h= open(hh,'w')
+  f = open(ff)
+  g = open(gg,'w')
+  h = open(hh,'w')
   #j= open(jj,'w')
   #mass_arr, atomtypes = memoize_mass(f)   
   for i in count(1):

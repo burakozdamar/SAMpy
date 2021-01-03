@@ -3,3 +3,4 @@
 __pycache__/
 warehouse/
 test/py_pos_recentered.xyz
+test/py_pos_rebuilt.xyz

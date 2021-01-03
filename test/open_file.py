@@ -37,18 +37,16 @@ def translate(arr1,arr2):
   return arr1-arr2
 
 def calcul_CM(xyz, kind='Si'):
+  coords = xyz.coords
   
   if kind=='water':
     mass_arr = np.array([mass[atom] for atom in xyz.atomtypes])
-    coords = xyz.coords
-    com = np.average(coords, axis=0, weights=mass_arr[:coords.shape[0]])
-    
+    print(mass_arr)
+  else:
+    mass_arr = np.array([mass[atom] if atom == 'Si' else 0 for atom in xyz.atomtypes])  
 
-  mass_arr = memoize_mass(xyz)
-  coords = xyz.coords
   com = np.average(coords, axis=0, weights=mass_arr[:coords.shape[0]])
 
-  mass_arr = np.array([mass[atom] if atom == 'Si' else 0 for atom in xyz.atomtypes])  
   t = pbc(translate(coords, com))
   return t
 
@@ -122,12 +120,11 @@ def open_file(ff):
     if i%1==0: print(f"x{i}")
     t = calcul_CM(xyz, kind='Si')
     water_mols = water_molecules(xyz)
-    tp = calcul_CM(water_mols)
-    print(water_mols)
+    water_com = calcul_CM(water_mols, kind='water')
+    #print(water_mols)
     #t_trans = translate(water_molecules(xyz),-trans_val)
-    t_rebuilt = calcul_CM(water_mols)
     write_xyz(g, t, title="", atomtypes=xyz.atomtypes) 
-    write_xyz(h, water_mols.coords, atomtypes=xyz.atomtypes) 
+    write_xyz(h, water_com, atomtypes=xyz.atomtypes) 
      
   f.close()
   g.close()

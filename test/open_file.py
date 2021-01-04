@@ -68,6 +68,7 @@ def water_molecules(xyz, translate=0, rebuilt=False):
     coords = pbc(coords)
     print(coords[0])
     #coords = water_pbc(coords)
+    #coords = test_pbc(coords)
     #print(coords[0])
   print(coords.shape)
 
@@ -99,12 +100,29 @@ def water_pbc(t):
   O = t[::3]
   H1 = t[1::3]
   H2 = t[2::3]
-  a = pbc(O-H1)  
-  print(np.max(a))
-  a = pbc(O-H2)  
-  print(np.max(a))
-  return a 
+  OH1 = O-H1  
+  OH2 = O-H2  
 
+  arr = np.where(OH1 < -pbc_/2, H1+pbc_, H1)
+  arr = np.where(OH1 >  pbc_/2, arr-pbc_, H1)
+
+  arr = np.where(OH2 < -pbc_/2, arr+pbc_, H2)
+  arr = np.where(OH2 >  pbc_/2, arr-pbc_, H2)
+  #not sure if it works
+  return t
+
+def test_pbc(t):
+  O = t[::3]
+  H1 = t[1::3]
+  H2 = t[2::3]
+  
+  O[0,0]=9999
+
+  OH1 = pbc(O-H1)  
+  OH2 = pbc(O-H2)  
+  print(t)
+  return t  
+  
 def write_xyz(fout, coords, title="", atomtypes=("A",)):
   fout.write("%d\n%s\n" % (coords.size / 3, title))
   for x, atomtype in zip(coords.reshape(-1, 3), cycle(atomtypes)):
@@ -123,7 +141,7 @@ def read_boxdata():
 BOXDATA = read_boxdata()
 trans_val = abs(float(BOXDATA['$ZTRASL'][0].replace('d','.')))
 
-def open_file(ff):
+def main(ff):
 
   f = open(ff)
   g = open(gg,'w')
@@ -149,4 +167,4 @@ def open_file(ff):
   g.close()
   h.close()
 
-open_file(ff)
+main(ff)

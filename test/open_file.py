@@ -9,14 +9,17 @@ sys.path.append('..')
 ff = sys.argv[1]
 gg = "py_pos_recentered.xyz"
 hh = "py_pos_rebuilt.xyz"
+jj = "py_pos_rebuilt_solid.xyz"
 
-from utils.xyz_utils import read_xyz
+from utils.xyz_utils import read_xyz, read_boxdata
 from collections import Counter, namedtuple
 from itertools import cycle, count, groupby
 
 mass = {'H': 1.00794,'x':0,'C':12.0107,'O':15.9994,'Si':28.0855,'Cl':35.4527,'K':39.0983,'Al':26.981539}
 pbc_ = np.array([13.386,13.286,85])
 
+BOXDATA = read_boxdata()
+trans_val = abs(float(BOXDATA['$ZTRASL'][0].replace('d','.')))
 
 def memoize_mass(xyz):
   mass_arr = np.array([mass[atom] for atom in xyz.atomtypes])  
@@ -32,13 +35,55 @@ def memoize_mass(xyz):
 
 #mass_arr, atomtypes = memoize_mass(ff)
 
+def sep(xyz):
+  data = xyz.data
+  coords = xyz.coords
+  atomtypes = xyz.atomtypes 
+
+  if 'C' in xyz.atomtypes:
+    mass_arr = np.array([mass[atom] if atom == "Si" else 0 for atom in xyz.atomtypes])  
+  else:
+    mass_arr = np.array([mass[atom] for atom in xyz.atomtypes])
+  weights=mass_arr[:coords.shape[0]]
+
+  #print(np.nonzero(weights))
+  com = np.average(coords, axis=0, weights=mass_arr[:coords.shape[0]])
+  #print(com)
+  translated = translate(coords, com)
+  translated = pbc(translated)
+  waters = translated[:360]
+  solids = translated[360:]
+
+  waters[:,2] -= trans_val
+  waters = pbc(waters)
+  print(waters.shape)
+  waters = water_pbc(waters)
+  solids[:,2] -= trans_val
+  solids = pbc(solids) 
+  final_tr = np.concatenate((waters, solids), axis=0) 
+
+  return namedtuple("sepnt", ["coords", "data", "atomtypes"])(
+        final_tr, data, atomtypes 
+    )
+
+
+def pbc(arr):
+ # arr = np.where(arr < -pbc_/2, arr+pbc_, arr)
+ # arr = np.where(arr >  pbc_/2, arr-pbc_, arr)
+ # return arr 
+  arr1 = np.where(arr < -pbc_/2, arr+pbc_, arr)
+  arr = np.where(arr1 >  pbc_/2, arr-pbc_, arr1)
+  return arr 
+
 def translate(arr1,arr2):
   return arr1-arr2
 
-def translate_to_CM(xyz, kind='Si'):
-  data= xyz.data
+def translate_to_CM(xyz, kind='Si', linear_trans=0):
+  data = xyz.data
   coords = xyz.coords
   atomtypes = xyz.atomtypes
+  n_oxygens = BOXDATA['$NO']
+  solids = coords[int(n_oxygens[0])*3:]
 
   if 'C' in xyz.atomtypes:
     mass_arr = np.array([mass[atom] if atom == kind else 0 for atom in xyz.atomtypes])  
@@ -46,10 +91,19 @@ def translate_to_CM(xyz, kind='Si'):
     mass_arr = np.array([mass[atom] for atom in xyz.atomtypes])
 
   com = np.average(coords, axis=0, weights=mass_arr[:coords.shape[0]])
-  translated = pbc(translate(coords, com))
+  translated = translate(coords, com)
+
+  #water_mols = water_molecules(translated, translate=trans_val, rebuilt=True)
+  solids -= linear_trans
   
+  t_solids = pbc(solids)
+
+  #final_tr = np.concatenate((water_mols.coords, t_solids), axis=0) 
+  final_tr = 0
+  #translated = pbc(translated)
+
   return namedtuple("trans_to_CM", ["coords", "data", "atomtypes"])(
-        translated, data, atomtypes 
+        final_tr, data, atomtypes 
     )
   #return translated
 
@@ -57,24 +111,24 @@ def water_molecules(xyz, translate=0, rebuilt=False):
   data = xyz.data
   atomtypes = xyz.atomtypes
   coords = xyz.coords
-  data_dct = read_boxdata()
-  n_oxygens = data_dct['$NO']
+  n_oxygens = BOXDATA['$NO']
   coords = coords[:int(n_oxygens[0])*3]  
   atomtypes = atomtypes[:int(n_oxygens[0])*3]  
   coords[:,2] -= translate
 
   if rebuilt:
-    print("rebuilt", coords[0])
+    #print("rebuilt", coords[0])
     coords = pbc(coords)
-    print(coords[0])
+    #print(coords[0])
     #coords = water_pbc(coords)
     #coords = test_pbc(coords)
     #print(coords[0])
-  print(coords.shape)
+  #print(coords.shape)
 
   return namedtuple("waters", ["coords", "data", "atomtypes"])(
         coords, data, atomtypes 
     )
+
 
 #def read_xyz(fin):
 #    natoms = int(fin.readline())
@@ -91,19 +145,14 @@ def water_molecules(xyz, translate=0, rebuilt=False):
 #    )
 
 
-def pbc(arr):
-  arr = np.where(arr < -pbc_/2, arr+pbc_, arr)
-  arr = np.where(arr >  pbc_/2, arr-pbc_, arr)
-  return arr 
-
 def water_pbc(t):
   O = t[::3]
   H1 = t[1::3]
   H2 = t[2::3]
-  OH1 = O-H1  
-  OH2 = O-H2  
+  OH1 = H1-O  
+  OH2 = H2-O  
 
-  arr = np.where(OH1 < -pbc_/2, H1+pbc_, H1)
+  arr = np.where(OH1 < -pbc_/.02, H1+pbc_, H1)
   arr = np.where(OH1 >  pbc_/2, arr-pbc_, H1)
 
   arr = np.where(OH2 < -pbc_/2, arr+pbc_, H2)
@@ -129,24 +178,13 @@ def write_xyz(fout, coords, title="", atomtypes=("A",)):
     #fout.write("%s %.8g %.8g %.8g\n" % (atomtype, x[0], x[1], x[2]))
     fout.write('{:2s} {:>12.6f} {:>12.6f} {:>12.6f}\n'.format(atomtype, x[0], x[1], x[2]))
 
-def read_boxdata():
-  with open("../warehouse/BOXDATA") as f:
-    ll = [l.strip() for l in f.readlines()]
-    res = [list(sub) for ele, sub in groupby(ll, key = bool) if ele] 
-    k = [item[0] for item in res]
-    v = [item[1:] for item in res]
-    v = [[i.split(' ') if len(i.split(' '))>1 else i for i in sl] for sl in v]
-    return dict(zip(k,v))
 
-BOXDATA = read_boxdata()
-trans_val = abs(float(BOXDATA['$ZTRASL'][0].replace('d','.')))
-
-def main(ff):
+def main(ff, boundary=1):
 
   f = open(ff)
   g = open(gg,'w')
   h = open(hh,'w')
-  #j= open(jj,'w')
+  j= open(jj,'w')
   #mass_arr, atomtypes = memoize_mass(f)   
   for i in count(1):
     try:
@@ -156,15 +194,18 @@ def main(ff):
       print("DONE")
       break
 
-    if i%1==0: print(f"x{i}")
-    t = translate_to_CM(xyz, kind='Si')
-    water_mols = water_molecules(t, translate=trans_val, rebuilt=True)
-      
-    write_xyz(g, t.coords, title="", atomtypes=xyz.atomtypes) 
-    write_xyz(h, water_mols.coords, atomtypes=xyz.atomtypes) 
+    #if i%1==0: print(f"x{i}")
+    sep1 = sep(xyz)
+    #t = translate_to_CM(xyz, kind='Si', linear_trans = trans_val)
+    #water_mols = water_molecules(t, translate=trans_val, rebuilt=True)
+    
+    step_num = int(sep1.data[0])
+    #write_xyz(g, t.coords, title='x', atomtypes=xyz.atomtypes) 
+    write_xyz(h, sep1.coords[:360], title=f"step = {step_num}", atomtypes=xyz.atomtypes) 
+    write_xyz(j, sep1.coords , title=f"step reb = {i}", atomtypes=xyz.atomtypes) 
      
   f.close()
   g.close()
   h.close()
-
+  j.close()
 main(ff)

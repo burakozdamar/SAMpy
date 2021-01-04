@@ -44,19 +44,17 @@ def sep(xyz):
     mass_arr = np.array([mass[atom] if atom == "Si" else 0 for atom in xyz.atomtypes])  
   else:
     mass_arr = np.array([mass[atom] for atom in xyz.atomtypes])
-  weights=mass_arr[:coords.shape[0]]
 
-  #print(np.nonzero(weights))
-  com = np.average(coords, axis=0, weights=mass_arr[:coords.shape[0]])
+  com = np.average(coords, axis=0, weights=mass_arr[:])
   #print(com)
   translated = translate(coords, com)
   translated = pbc(translated)
+
   waters = translated[:360]
   solids = translated[360:]
 
   waters[:,2] -= trans_val
   waters = pbc(waters)
-  print(waters.shape)
   waters = water_pbc(waters)
   solids[:,2] -= trans_val
   solids = pbc(solids) 
@@ -146,18 +144,23 @@ def water_molecules(xyz, translate=0, rebuilt=False):
 
 
 def water_pbc(t):
+  print(t[:10])
   O = t[::3]
   H1 = t[1::3]
   H2 = t[2::3]
   OH1 = H1-O  
   OH2 = H2-O  
+  print(OH1[:10])
 
-  arr = np.where(OH1 < -pbc_/.02, H1+pbc_, H1)
+  arr = np.where(OH1 < -pbc_/2, H1+pbc_, H1)
+  print(t[:3])
   arr = np.where(OH1 >  pbc_/2, arr-pbc_, H1)
-
+  
+  print(arr[:10])
   arr = np.where(OH2 < -pbc_/2, arr+pbc_, H2)
   arr = np.where(OH2 >  pbc_/2, arr-pbc_, H2)
   #not sure if it works
+  #print(t[10])
   return t
 
 def test_pbc(t):
@@ -195,6 +198,7 @@ def main(ff, boundary=1):
       break
 
     #if i%1==0: print(f"x{i}")
+    print(i)
     sep1 = sep(xyz)
     #t = translate_to_CM(xyz, kind='Si', linear_trans = trans_val)
     #water_mols = water_molecules(t, translate=trans_val, rebuilt=True)

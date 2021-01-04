@@ -55,7 +55,7 @@ def sep(xyz):
 
   waters[:,2] -= trans_val
   waters = pbc(waters)
-  waters = water_pbc(waters)
+  waters = manual_wat_pbc(waters)
   solids[:,2] -= trans_val
   solids = pbc(solids) 
   final_tr = np.concatenate((waters, solids), axis=0) 
@@ -163,6 +163,29 @@ def water_pbc(t):
   #print(t[10])
   return t
 
+def manual_wat_pbc(t):
+  print('t',t[:10])
+  O = t[::3]
+  H1 = t[1::3]
+  H2 = t[2::3]
+  OH1 = H1-O  
+  OH2 = H2-O  
+  
+  for i in range(OH1.shape[0]):
+    for j in range(OH1.shape[1]):
+      if OH1[i][j] < -pbc_[j]/2:
+        H1[i][j]+pbc_[j]
+      elif OH1[i][j] > +pbc_[j]/2:
+        H1[i][j]-pbc_[j]
+
+      if OH2[i][j] < -pbc_[j]/2:
+        H2[i][j]+pbc_[j]
+      elif OH2[i][j] > +pbc_[j]/2:
+        H2[i][j]-pbc_[j]
+
+  #H1[0][0]=123456789
+  return t
+
 def test_pbc(t):
   O = t[::3]
   H1 = t[1::3]
@@ -206,7 +229,7 @@ def main(ff, boundary=1):
     step_num = int(sep1.data[0])
     #write_xyz(g, t.coords, title='x', atomtypes=xyz.atomtypes) 
     write_xyz(h, sep1.coords[:360], title=f"step = {step_num}", atomtypes=xyz.atomtypes) 
-    write_xyz(j, sep1.coords , title=f"step reb = {i}", atomtypes=xyz.atomtypes) 
+    write_xyz(j, sep1.coords , title=f"step rebu = {i}", atomtypes=xyz.atomtypes) 
      
   f.close()
   g.close()

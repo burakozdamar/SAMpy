@@ -1,4 +1,4 @@
-# SFGpy
+# SAMpy
 -----
 python package to analyze SAM molecules for their hydrophobic and hydrophilic properties.
 

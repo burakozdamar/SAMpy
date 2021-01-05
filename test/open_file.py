@@ -210,7 +210,7 @@ def main(ff, boundary=1):
   f = open(ff)
   g = open(gg,'w')
   h = open(hh,'w')
-  j= open(jj,'w')
+  j = open(jj,'w')
   #mass_arr, atomtypes = memoize_mass(f)   
   for i in count(1):
     try:

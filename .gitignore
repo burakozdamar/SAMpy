@@ -2,5 +2,4 @@
 *.swo
 __pycache__/
 warehouse/
-test/*.xyz
-test/*.xyz
+test/py_pos*.xyz

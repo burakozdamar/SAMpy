@@ -35,29 +35,18 @@ def memoize_mass(ff):
 
   return mass_arr
 
-def sep(xyz):
+def process(xyz):
   data = xyz.data
   coords = xyz.coords
   atomtypes = xyz.atomtypes 
   n_wat = int(BOXDATA['$NO'][0])*3
-
-  com = np.average(coords, axis=0, weights=mass_arr[:])
-  translated = translate(coords, com)
-  translated = apply_pbc(translated)
-  translated[:,2] -= trans_val
-
-  waters = translated[:num_waters]
-  solids = translated[num_waters:]
-
-  waters = apply_pbc(waters)
-  waters = rebuild_water(waters)
+  x,y,z = grid(pbc_)
+  print(x)
   
-  solids = apply_pbc(solids) 
-  final_tr = np.concatenate((waters, solids), axis=0) 
 
-  return namedtuple("sepnt", ["coords", "data", "atomtypes"])(
-        final_tr, data, atomtypes 
-    )
+ # return namedtuple("sepnt", ["coords", "data", "atomtypes"])(
+ #       final_tr, data, atomtypes 
+ #   )
 
 def apply_pbc(arr):
   arr1 = np.where(arr < -pbc_/2, arr+pbc_, arr)
@@ -67,21 +56,6 @@ def apply_pbc(arr):
 def translate(arr1,arr2):
   return arr1-arr2
 
-def rebuild_water(t):
-
-  O = t[::3]
-  H1 = t[1::3]
-  H2 = t[2::3]
-  OH1 = H1-O  
-  OH2 = H2-O  
-
-  H1 += (OH1 < -pbc_/2)*pbc_ 
-  H1 -= (OH1 >  pbc_/2)*pbc_ 
-  H2 += (OH2 < -pbc_/2)*pbc_ 
-  H2 -= (OH2 >  pbc_/2)*pbc_ 
-
-  return t
-
 #format is slow!
 def write_xyz(fout, coords, title="", atomtypes=("A",)):
   fout.write("%d\n%s\n" % (coords.size / 3, title))
@@ -89,19 +63,28 @@ def write_xyz(fout, coords, title="", atomtypes=("A",)):
     fout.write('{:2s} {:>12.6f} {:>12.6f} {:>12.6f}\n'.format(atomtype, x[0], x[1], x[2]))
     #fout.write("%s %.18g %.18g %.18g\n" % (atomtype, x[0], x[1], x[2]))
 
-def grid():
+def grid(pbc):
   E = 2.4
   d = np.array([0.5, 0.5, 0.25])
-  n = np.array(list(map(round, (pbc_/d)[:])))
-  f = - (pbc_ - d)/2 
-  return (d, n, f, (n-1)*d+f)
+  n = np.array(list(map(round, (pbc/d)[:])))
+  f = - (pbc - d)/2
+  k = (n-1)*d+f
+
+  x = np.arange(f[0], k[0]+0.5 , 0.5)
+  y = np.arange(f[1], k[1]+0.5 , 0.5)
+  z = np.arange(f[2], k[2]+0.25 , 0.25)
+
+  #print (d, n, f, (n-1)*d+f)
+  return x,y,z
 
  # r = np.sqrt(xdiff**2+ydiff**2+zdiff**2)
  # if (r<=3*E):
  #   p = p + exp(-r**2/(2*E**2))/((2*np.pi*E**2)**1.5)
 
 
-@profile_me
+
+
+#@profile_me
 def main(ff, boundary=1):
 
   f = open(ff)
@@ -116,13 +99,12 @@ def main(ff, boundary=1):
       print("DONE")
       break
 
-    sep1 = sep(xyz)
-    
-    step_num = int(sep1.data[0])
+    proc = process(xyz)
+    #proc     
     #interface.xyz to write
     #grid_interface to write
-    write_xyz(h, sep1.coords[:360], title=f"step wat = {step_num}", atomtypes=xyz.atomtypes) 
-    write_xyz(j, sep1.coords , title=f"step rebu = {i}", atomtypes=xyz.atomtypes) 
+    #write_xyz(h, sep1.coords[:360], title=f"step wat = {step_num}", atomtypes=xyz.atomtypes) 
+    #write_xyz(j, sep1.coords , title=f"step rebu = {i}", atomtypes=xyz.atomtypes) 
      
   f.close()
   h.close()
@@ -130,6 +112,5 @@ def main(ff, boundary=1):
 
 mass_arr = memoize_mass(ff) 
 
-grid()
-#main(ff)
+main(ff)
 #print(read_boxdata())

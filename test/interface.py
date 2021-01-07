@@ -42,7 +42,7 @@ def process(xyz):
   n_wat = int(BOXDATA['$NO'][0])*3
   x,y,z = grid(pbc_)
   print(x)
-  
+   
 
  # return namedtuple("sepnt", ["coords", "data", "atomtypes"])(
  #       final_tr, data, atomtypes 

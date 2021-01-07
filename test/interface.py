@@ -3,6 +3,7 @@
 import re
 import sys
 import numpy as np
+from tqdm import trange
 
 sys.path.append('..')
 
@@ -24,7 +25,7 @@ num_oxygens = int(BOXDATA['$NO'][0])
 num_waters = int(BOXDATA['$NO'][0])*3
 
 def memoize_mass(ff):
-  print("MEMO")
+  print("Reading mass array")
   with open(ff) as f:
     xyz = read_xyz(f)
     
@@ -41,7 +42,7 @@ def process(xyz):
   atomtypes = xyz.atomtypes 
   n_wat = int(BOXDATA['$NO'][0])*3
   x,y,z = grid(pbc_)
-  print(x)
+  #print(x)
    
 
  # return namedtuple("sepnt", ["coords", "data", "atomtypes"])(
@@ -91,7 +92,7 @@ def main(ff, boundary=1):
   h = open(hh,'w')
   j = open(jj,'w')
 
-  for i in count(1):
+  for i in trange(1000):
     try:
       xyz = read_xyz(f)
  

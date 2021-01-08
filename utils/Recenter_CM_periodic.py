@@ -19,9 +19,9 @@ mass = {'H': 1.00794,'C':12.0107,'O':15.9994,'Si':28.0855,'Cl':35.4527,'K':39.09
 pbc_ = np.array([13.386,13.286,85])
 
 BOXDATA = read_boxdata()
-trans_val = abs(float(BOXDATA['$ZTRASL'][0].replace('d','.')))
-num_oxygens = int(BOXDATA['$NO'][0])
-num_waters = int(BOXDATA['$NO'][0])*3
+trans_val = abs(BOXDATA['$ZTRASL'])
+num_oxygens = BOXDATA['$NO']
+num_waters = num_oxygens*3
 
 def memoize_mass(ff):
   print("MEMO")
@@ -39,7 +39,6 @@ def sep(xyz):
   data = xyz.data
   coords = xyz.coords
   atomtypes = xyz.atomtypes 
-  n_wat = int(BOXDATA['$NO'][0])*3
 
   com = np.average(coords, axis=0, weights=mass_arr[:])
   translated = translate(coords, com)
@@ -89,7 +88,7 @@ def write_xyz(fout, coords, title="", atomtypes=("A",)):
     fout.write('{:2s} {:>12.6f} {:>12.6f} {:>12.6f}\n'.format(atomtype, x[0], x[1], x[2]))
     #fout.write("%s %.18g %.18g %.18g\n" % (atomtype, x[0], x[1], x[2]))
 
-@profile_me
+#@profile_me
 def main(ff, boundary=1):
 
   f = open(ff)

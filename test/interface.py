@@ -19,29 +19,43 @@ from profiler.prof import profile_me
 mass = {'H': 1.00794,'C':12.0107,'O':15.9994,'Si':28.0855,'Cl':35.4527,'K':39.0983,'Al':26.981539}
 
 BOXDATA = read_boxdata()
-pbc_ = np.array([13.386,13.286,85])
-trans_val = abs(float(BOXDATA['$ZTRASL'][0].replace('d','.')))
-num_oxygens = int(BOXDATA['$NO'][0])
-num_waters = int(BOXDATA['$NO'][0])*3
+#pbc_ = BOXDATA['$BOX-DIMENTIONS']
+pbc_ = np.array([13.386, 13.286, 85.])
+trans_val = abs(BOXDATA['$ZTRASL'])
+num_oxygens = BOXDATA['$NO']
+num_waters = num_oxygens*3
 
-def memoize_mass(ff):
-  print("Reading mass array")
-  with open(ff) as f:
-    xyz = read_xyz(f)
-    
-    if 'C' in xyz.atomtypes:
-      mass_arr = np.array([mass[atom] if atom == 'Si' else 0 for atom in xyz.atomtypes])
-    else:
-      mass_arr = np.array([mass[atom] for atom in xyz.atomtypes])
 
-  return mass_arr
+def grid(pbc):
+  E = 2.4
+  d = np.array([0.5, 0.5, 0.25])
+  n = np.array(list(map(round, (pbc/d)[:])))
+  f = - (pbc - d)/2
+  k = (n-1)*d+f
+
+  x = np.arange(f[0], k[0]+0.5 , 0.5)
+  y = np.arange(f[1], k[1]+0.5 , 0.5)
+  z = np.arange(f[2], k[2]+0.25 , 0.25)
+
+  #print (d, n, f, (n-1)*d+f)
+  return x,y,z
+
+x,y,z = grid(pbc_)
+res = np.array([(i,j,k) for i in x for j in y for k in z])
+res = res.reshape(len(x),len(y),len(z),-1)
 
 def process(xyz):
   data = xyz.data
   coords = xyz.coords
-  atomtypes = xyz.atomtypes 
-  n_wat = int(BOXDATA['$NO'][0])*3
-  x,y,z = grid(pbc_)
+  atomtypes = xyz.atomtypes
+  oxygens_ = oxygens(coords) 
+  #print( oxygens_[:, np.newaxis,np.newaxis,np.newaxis, :].shape)
+  return oxygens_[:, np.newaxis,np.newaxis,np.newaxis, :]
+
+
+
+def oxygens(arr):
+  return arr[::3]
   #print(x)
    
 
@@ -64,35 +78,16 @@ def write_xyz(fout, coords, title="", atomtypes=("A",)):
     fout.write('{:2s} {:>12.6f} {:>12.6f} {:>12.6f}\n'.format(atomtype, x[0], x[1], x[2]))
     #fout.write("%s %.18g %.18g %.18g\n" % (atomtype, x[0], x[1], x[2]))
 
-def grid(pbc):
-  E = 2.4
-  d = np.array([0.5, 0.5, 0.25])
-  n = np.array(list(map(round, (pbc/d)[:])))
-  f = - (pbc - d)/2
-  k = (n-1)*d+f
-
-  x = np.arange(f[0], k[0]+0.5 , 0.5)
-  y = np.arange(f[1], k[1]+0.5 , 0.5)
-  z = np.arange(f[2], k[2]+0.25 , 0.25)
-
-  #print (d, n, f, (n-1)*d+f)
-  return x,y,z
-
- # r = np.sqrt(xdiff**2+ydiff**2+zdiff**2)
- # if (r<=3*E):
- #   p = p + exp(-r**2/(2*E**2))/((2*np.pi*E**2)**1.5)
-
-
 
 
 #@profile_me
 def main(ff, boundary=1):
-
+  print("interface.py is running...")
   f = open(ff)
   h = open(hh,'w')
   j = open(jj,'w')
 
-  for i in trange(1000):
+  for i in trange(10):
     try:
       xyz = read_xyz(f)
  
@@ -101,6 +96,7 @@ def main(ff, boundary=1):
       break
 
     proc = process(xyz)
+    #print(proc)
     #proc     
     #interface.xyz to write
     #grid_interface to write
@@ -111,7 +107,6 @@ def main(ff, boundary=1):
   h.close()
   j.close()
 
-mass_arr = memoize_mass(ff) 
-
 main(ff)
 #print(read_boxdata())
+#print(BOXDATA)

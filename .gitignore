@@ -1,7 +1,8 @@
-*.swp
-*.swo
+.*.swp
+.*.swo
 __pycache__/
 warehouse/
 test/py_pos_rebuilt.xyz
 test/py_pos_rebuilt_solid.xyz
 test/py_pos_recentered.xyz
+profiler/

@@ -17,6 +17,7 @@ from itertools import cycle, count, groupby
 from profiler.prof import profile_me
 
 mass = {'H': 1.00794,'C':12.0107,'O':15.9994,'Si':28.0855,'Cl':35.4527,'K':39.0983,'Al':26.981539}
+E = 2.4
 
 BOXDATA = read_boxdata()
 #pbc_ = BOXDATA['$BOX-DIMENTIONS']
@@ -40,17 +41,27 @@ def grid(pbc):
   #print (d, n, f, (n-1)*d+f)
   return x,y,z
 
-x,y,z = grid(pbc_)
-res = np.array([(i,j,k) for i in x for j in y for k in z])
-res = res.reshape(len(x),len(y),len(z),-1)
 
 def process(xyz):
   data = xyz.data
   coords = xyz.coords
+  #print(coords.shape)
   atomtypes = xyz.atomtypes
   oxygens_ = oxygens(coords) 
-  #print( oxygens_[:, np.newaxis,np.newaxis,np.newaxis, :].shape)
-  return oxygens_[:, np.newaxis,np.newaxis,np.newaxis, :]
+  oxygens_ = oxygens_[:, np.newaxis,np.newaxis,np.newaxis, :]
+  #print(oxygens_.shape)
+  diff = translate(res,oxygens_)
+  #print(diff.shape)
+  diff = diff.reshape(120,-1,3)
+  dist = np.linalg.norm(diff, axis=2)
+  #print(dist)
+  p = np.exp(-dist**2/(2*E**2))/((2*np.pi*E**2)**1.5)
+  arr = np.where(dist<=3*2.4, p, 0)
+  pdiff = np.abs(0.016 - np.sum(arr, axis=0))
+  pdiff = np.where(pdiff<0.004, pdiff, 0)
+  pdiff = pdiff.reshape(27,27,340)
+
+  return pdiff
 
 
 
@@ -78,7 +89,9 @@ def write_xyz(fout, coords, title="", atomtypes=("A",)):
     fout.write('{:2s} {:>12.6f} {:>12.6f} {:>12.6f}\n'.format(atomtype, x[0], x[1], x[2]))
     #fout.write("%s %.18g %.18g %.18g\n" % (atomtype, x[0], x[1], x[2]))
 
-
+x,y,z = grid(pbc_)
+res = np.array([(i,j,k) for i in x for j in y for k in z])
+res = res.reshape(len(x),len(y),len(z),-1)
 
 #@profile_me
 def main(ff, boundary=1):
@@ -96,7 +109,7 @@ def main(ff, boundary=1):
       break
 
     proc = process(xyz)
-    #print(proc)
+    #print(proc.shape)
     #proc     
     #interface.xyz to write
     #grid_interface to write

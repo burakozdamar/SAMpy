@@ -1,6 +1,6 @@
 #!/usr/bin/env/python3
 
-import re
+import re, time
 import sys
 import numpy as np
 from tqdm import trange
@@ -45,23 +45,20 @@ def grid(pbc):
 def process(xyz):
   data = xyz.data
   coords = xyz.coords
-  #print(coords.shape)
   atomtypes = xyz.atomtypes
   oxygens_ = oxygens(coords) 
   oxygens_ = oxygens_[:, np.newaxis,np.newaxis,np.newaxis, :]
-  #print(oxygens_.shape)
   diff = translate(res,oxygens_)
   #print(diff.shape)
   diff = diff.reshape(120,-1,3)
   dist = np.linalg.norm(diff, axis=2)
-  #print(dist)
   p = np.exp(-dist**2/(2*E**2))/((2*np.pi*E**2)**1.5)
   arr = np.where(dist<=3*2.4, p, 0)
   pdiff = np.abs(0.016 - np.sum(arr, axis=0))
   pdiff = np.where(pdiff<0.004, pdiff, 0)
   pdiff = pdiff.reshape(27,27,340)
 
-  return pdiff
+  return coords[0]
 
 
 
@@ -89,6 +86,7 @@ def write_xyz(fout, coords, title="", atomtypes=("A",)):
     fout.write('{:2s} {:>12.6f} {:>12.6f} {:>12.6f}\n'.format(atomtype, x[0], x[1], x[2]))
     #fout.write("%s %.18g %.18g %.18g\n" % (atomtype, x[0], x[1], x[2]))
 
+
 x,y,z = grid(pbc_)
 res = np.array([(i,j,k) for i in x for j in y for k in z])
 res = res.reshape(len(x),len(y),len(z),-1)
@@ -97,18 +95,22 @@ res = res.reshape(len(x),len(y),len(z),-1)
 def main(ff, boundary=1):
   print("interface.py is running...")
   f = open(ff)
-  h = open(hh,'w')
-  j = open(jj,'w')
+#  h = open(hh,'w')
+#  j = open(jj,'w')
 
-  for i in trange(10):
+  for i in trange(100):
     try:
       xyz = read_xyz(f)
- 
+      if i%10==0:
+        proc = process(xyz)
+        print(proc)
+
+      else:
+        print('skip')
+   
     except ValueError as e:
       print("DONE")
       break
-
-    proc = process(xyz)
     #print(proc.shape)
     #proc     
     #interface.xyz to write
@@ -117,8 +119,8 @@ def main(ff, boundary=1):
     #write_xyz(j, sep1.coords , title=f"step rebu = {i}", atomtypes=xyz.atomtypes) 
      
   f.close()
-  h.close()
-  j.close()
+#  h.close()
+#  j.close()
 
 main(ff)
 #print(read_boxdata())

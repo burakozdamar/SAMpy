@@ -1,5 +1,6 @@
 .*.swp
 .*.swo
+utils/__pycache__/
 __pycache__/
 warehouse/
 test/py_pos_rebuilt.xyz
